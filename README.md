@@ -4,10 +4,7 @@ A [Claude Code](https://claude.com/claude-code) skill for running an omics analy
 
 ## What it does
 
-- **Keeps three state files** in `<analysis_dir>/consensus/`:
-  - `analysis_state.md`: what the analysis is doing;
-  - `consensus_state.md`: what both sides agree on. Each item is marked `understood` / `allowed` / `unsure` / `unknown` / `contradicted`, and clicking "continue" only counts as *allowed*, never *understood*;
-  - `decision_log.md`: one entry per decision; it becomes the skeleton of the final report.
+- **Keeps a record of every run** in `<analysis_dir>/consensus/<run_id>/`: the analysis state, the shared-understanding (consensus) state with its full change history, a decision log, a timestamped question log, and a final report (see [What gets recorded](#what-gets-recorded)). In the consensus state every item is marked `understood` / `allowed` / `unsure` / `unknown` / `contradicted`, and clicking "continue" only counts as *allowed*, never *understood*.
 - **Decides whether to ask.** Five triggers (ambiguous intent, unconfirmed key assumption, a result that defies expectation, a choice that changes the conclusion, possible misunderstanding), plus one test: *could the user's answer change the next action or how the result is interpreted?* If not, Claude adds a short note instead of interrupting.
 - **Uses one format per point:** Finding → Meaning → Suggestion → one Question, with the figure and sample rows shown next to it. The user can answer, correct the premise, or say "I'm not sure".
 - **Shows what changed after each answer**, e.g. "the samples are paired → switching to a paired design; the result now describes change within each animal". It then logs the decision.
@@ -94,7 +91,7 @@ Then check either way:
 /biologist-consensus-loop analyse ./data with me in on-demand mode
 ```
 
-Claude creates `./consensus/` (inside your analysis folder) holding the analysis state, the consensus state and the decision log, and keeps them up to date as the analysis goes on.
+Each run gets its own folder, `<analysis_dir>/consensus/<run_id>/`, where the run id is the start time (e.g. `20261101-143005`). If you continue the same analysis in a later session, Claude reuses the open run folder instead of starting a new one. See [What gets recorded](#what-gets-recorded).
 
 ### 4. Enable / disable
 
@@ -144,14 +141,33 @@ For a project install, remove `.claude/skills/biologist-consensus-loop/` from th
 - **Never loads by itself:** check that `skillOverrides` doesn't set it to `off` or `user-invocable-only`, and that no `Skill(...)` deny rule matches it. You can always start it manually with `/biologist-consensus-loop`.
 - **The wrong version runs:** a personal copy beats a project copy with the same name. Remove one of them.
 
+## What gets recorded
+
+After each run, `<analysis_dir>/consensus/<run_id>/` contains:
+
+| File | What it holds |
+|---|---|
+| `run.md` | Run header: run id, skill version, mode, participant label, data paths, start / resume / end times. At the end, summary counts taken from the other files: decisions, superseded decisions, questions by initiator, responses by type, exchanges that changed the next action, and the final consensus statuses. |
+| `analysis_state.md` | The current question, step, newest finding and next options, plus an **append-only history** of every change (time, old → new, why). |
+| `consensus_state.md` | The stated intent, confirmed choices, open assumptions and per-concept familiarity, plus an **append-only history** of every status change, so you can see how shared understanding developed, not just where it ended. |
+| `decision_log.md` | One timestamped entry per decision (D1, D2, …): question, confirmed basis, impact, what to reinterpret, what is still open. Reversed decisions are never rewritten; they are linked with `Supersedes` / `Superseded by`. |
+| `interaction_log.tsv` | One row per question **from either side** (agent and user), ready to load into R/pandas: `q_id`, `initiator`, `asked_at`, `answered_at`, `turn`, `mode`, `trigger`, `decision_class`, `response_type`, `action_changed`, `decision_id`, `consensus_changed`. |
+| `final_report.md` | The report, built from the decision log: for each result, the confirmed facts it rests on, open assumptions, limitations, and what would change the conclusion. |
+
+**Limits of the record:**
+- Claude writes these files itself following the skill. Nothing outside the model checks that every question was logged, so for a formal study, compare a sample of runs against the session transcripts.
+- Timestamps come from the shell at the moment Claude writes them. `answered_at` is when Claude started processing the reply, which is close to, but not exactly, when the user sent it.
+
 ## Layout
 
 ```
 skills/biologist-consensus-loop/
 ├── SKILL.md                    # the protocol Claude follows
-├── templates/                  # copied into <analysis_dir>/consensus/ at the start
+├── templates/                  # copied into <analysis_dir>/consensus/<run_id>/ at the start
+│   ├── run.md
 │   ├── analysis_state.md
 │   ├── consensus_state.md
-│   └── decision_log.md         # includes the per-question interaction log
+│   ├── decision_log.md
+│   └── interaction_log.tsv     # header row only
 └── references/study_design.md  # 3-condition evaluation design + outcome measures
 ```

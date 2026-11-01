@@ -15,7 +15,17 @@ Keep the dataset, pipeline, tools and model the same. Only the mode switch diffe
 - **Understanding:** can the user explain *why* a specific choice affects the conclusion (e.g. why pairing changes what the DE result means)?
 - **Instruction quality:** do the user's later instructions carry clearer goals, constraints and experimental context? Code instructions for presence of goal / constraint / context.
 - **Result interpretation:** can the user name the limits of the conclusion, and judge whether it still holds when the situation changes?
-- **Interaction cost:** number of interruptions, time taken, subjective burden (e.g. NASA-TLX). Interruption counts come from the interaction log in `decision_log.md`.
+- **Interaction cost:** number of interruptions, time taken, subjective burden (e.g. NASA-TLX). From each run folder: interruptions = agent-initiated rows in `interaction_log.tsv`; time per exchange = `answered_at − asked_at`; total time = `run.md` start → end.
+
+## Data from each run
+
+Each run writes `consensus/<run_id>/` (see SKILL.md §0, §7, §8):
+- `interaction_log.tsv`: one row per question from either side. User-initiated rows matter most in the `on-demand` condition, where the user drives the questions.
+- the history tables in `consensus_state.md`: when each consensus item and concept changed status, and why. Use them to compare how quickly and how far shared understanding develops in each condition.
+- `decision_log.md`: superseded decisions show where the analysis had to change course.
+- `run.md`: mode, participant label and summary counts for the run.
+
+The model writes these records itself. Before analysing, check a sample of runs against the session transcripts for missing rows.
 
 ## Transfer probe
 
@@ -23,6 +33,6 @@ Measure understanding with a **new small scenario** (e.g. a different dataset wh
 
 ## Scope for v1
 
-Cover only the four decision classes: research goal, sample relationships, outlier samples, interpreting conclusions. First find out **which questions actually changed the user's instructions or their understanding of the results**. The interaction log column "Next action changed" together with the outcome measures shows this. Extend the dynamic policy only after that.
+Cover only the four decision classes: research goal, sample relationships, outlier samples, interpreting conclusions. First find out **which questions actually changed the user's instructions or their understanding of the results**. The `action_changed` and `consensus_changed` columns of `interaction_log.tsv`, together with the outcome measures, show this. Extend the dynamic policy only after that.
 
 Contribution framing: through a dialogue that adapts as the analysis moves forward, the user gradually becomes able to direct and interpret this analysis.

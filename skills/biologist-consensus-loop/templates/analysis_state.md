@@ -1,8 +1,6 @@
 # Analysis state
 
-- **Mode:** dynamic   <!-- on-demand | fixed | dynamic -->
-- **Data:** <!-- counts matrix, sample sheet, paths -->
-- **Last updated:** <!-- turn / date -->
+Current state at the top (editable). Every change is also appended to the history at the bottom (never edited).
 
 ## Current biological question
 <!-- As currently operationalised in the analysis -->
@@ -17,3 +15,9 @@
 | Option | What it changes | Which question it answers |
 |---|---|---|
 | | | |
+
+---
+
+## History (append-only)
+| Time | Field | Old → new | Why (turn / D id / Q id) |
+|---|---|---|---|
