@@ -1,7 +1,7 @@
 # Consensus state
 
-Status values: `understood` (user explained it back or used it correctly) · `allowed` (said go ahead, understanding not shown) · `unsure` · `unknown` · `contradicted`.
-"Continue" means `allowed`, never `understood`.
+Status values: `understood` (user stated in their own words what it implies, or applied it to a new case) · `confirmed` (user supplied/confirmed the fact, implication not shown) · `allowed` (said go ahead) · `unsure` · `unknown` · `contradicted`.
+"Continue" means `allowed`. Supplying a fact means `confirmed`. Neither means `understood`.
 
 Current state at the top (editable). Every change is also appended to the history at the bottom (never edited).
 

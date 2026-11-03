@@ -2,7 +2,7 @@
 name: biologist-consensus-loop
 description: Run an omics analysis (first target RNA-seq) together with a biologist who is not a computational expert, using an "analyse → explain → ask → update" loop. Claude keeps an analysis state, a shared-understanding (consensus) state and a decision log. At each meaningful decision point it decides whether a question is worth an interruption. It reports each point as Finding → Meaning → Suggestion → one Question, shows what changed after each answer, and adapts its explanations to which concepts this user has shown they understand. Use when a wet-lab or clinical collaborator asks Claude to analyse their data, says "walk me through it", "I'm not a bioinformatician", "help me understand the results", or 带我做分析/边做边解释. Also use when running the three-condition user study (on-demand / fixed / dynamic questioning) described in references/study_design.md.
 metadata:
-  version: 0.2.0
+  version: 0.2.1
 ---
 
 # Biologist consensus loop (分析—解释—反问—更新)
@@ -40,14 +40,20 @@ Update the files whenever something changes, not just at the end.
 | Options for the next step and what each affects | Information only the user can provide |
 
 Every consensus item carries a status:
-`understood` (the user explained it back or used it correctly) · `allowed` (the user said go ahead, but understanding is not shown) · `unsure` (the user said they don't know) · `unknown` (not discussed yet) · `contradicted` (new data broke it).
+- `understood`: the user has stated, **in their own words, what the item implies for the analysis or the conclusion**, or applied it correctly to a new case.
+- `confirmed`: the user supplied or confirmed the fact ("yes, the samples are paired"), but hasn't shown they see what it implies.
+- `allowed`: the user said go ahead, without confirming the fact or showing understanding.
+- `unsure`: the user said they don't know.
+- `unknown`: not discussed yet.
+- `contradicted`: new data or a later answer broke it.
 
-**"Continue" means `allowed`, never `understood`.**
+**"Continue" means `allowed`. Supplying a fact means `confirmed`. Neither means `understood`.** The same rule applies to concept familiarity (§5): knowing a fact about this experiment is not understanding the concept. For example, confirming that the samples are paired does not show understanding of what pairing does to the comparison.
 
 **Recording rules:**
 - The top sections of `analysis_state.md` and `consensus_state.md` show the *current* state and may be edited.
 - Every change is **also** appended as a row to the history table at the bottom of the same file: a timestamp, what changed (old → new), and why (turn number, decision id or question id). History rows are never edited or deleted.
 - Timestamps always come from the shell (`date -Iseconds`). Never estimate or invent a time.
+- **A turn is one message the user typed.** Number them 1, 2, 3, … in the order the user sent them. Background-task notifications, tool results, system events and your own follow-up messages are not turns: work done in response to them belongs to the current turn.
 
 ## 2. Decision gate: should I ask now? (dynamic mode)
 
@@ -94,7 +100,11 @@ Then append a decision-log entry (template in `templates/decision_log.md`) with 
 
 If the answer changes earlier results, say which earlier plots or claims now need to be reinterpreted.
 
-**Never delete or rewrite an earlier decision.** If a decision is reversed or reopened, add a new entry that says `Supersedes: Dk` and why, and add `Superseded by: Dm` under the old entry. The log must show how the analysis actually got where it is.
+**Never delete or rewrite the text of an earlier decision**, even to fix a mistake in it. The log must show how the analysis actually got where it is, including what you believed at each point.
+- **Correction** (a fact, number or claimed check in the entry was wrong, but the decision stands): add an `Amendment` line under the entry, with a timestamp, what was wrong, what is correct, and whether the decision still holds. The original text stays as it was.
+- **Reversal or reopening** (the decision itself changes): add a new entry that says `Supersedes: Dk` and why, and add `Superseded by: Dm` under the old entry.
+
+Only these two fields may be added to an old entry after it is written: `Amendment` lines and `Superseded by`. Write an entry only once the checks it cites have finished. If a check is still running, say "pending" in the entry, and record the result later as an amendment.
 
 ## 5. Adapt per concept, not per person
 
@@ -129,9 +139,9 @@ Cover these well before expanding. The stage gates double as the checkpoints for
 |---|---|
 | `q_id` | Q1, Q2, … |
 | `initiator` | `agent` or `user` |
-| `asked_at` | `date -Iseconds` when the question is posted (for agent questions: run it just before sending; for user questions: at the start of your reply) |
-| `answered_at` | `date -Iseconds` at the start of the turn where the answer arrives (agent questions), or when you finish answering (user questions) |
-| `turn` | conversation turn number |
+| `asked_at` | Agent questions: `date -Iseconds` run just before you send the question. User questions: `date -Iseconds` run as your **first** action after reading the question. |
+| `answered_at` | Agent questions: `date -Iseconds` run as your first action in the turn where the answer arrives. User questions: `date -Iseconds` run as your **last** action before you send the answer. These are two separate shell calls, so for a user question the two times must differ. Never copy one into the other. |
+| `turn` | the user turn the question belongs to (§1: user-typed messages only) |
 | `mode` | `on-demand` / `fixed` / `dynamic` |
 | `trigger` | `1`–`5` (§2), `stage-gate`, `blocking`, or `user` |
 | `decision_class` | `research-goal` / `sample-relationships` / `outlier-samples` / `interpreting-conclusions` / `other` |
@@ -147,7 +157,7 @@ Fill `asked_at` and the question columns when the question is posted, and the re
 When the analysis is finished, or the user stops:
 
 1. Write `<analysis_dir>/consensus/<run_id>/final_report.md`, built from `decision_log.md`. For each result say **why it was obtained this way**: which confirmed facts it rests on (cite decision ids), which assumptions are still open, and which limitations follow from them. End with a short "what would change this conclusion" section.
-2. Complete `run.md`: end time (`date -Iseconds`), and summary counts computed from the files: number of decisions, number of superseded decisions, agent-initiated and user-initiated questions, answers by response type, `action_changed = y` count, and the final consensus statuses. Count from the files; don't estimate.
+2. Complete `run.md`: end time (`date -Iseconds`), and summary counts computed from the files: number of user turns, decisions, amended decisions, superseded decisions, agent-initiated and user-initiated questions, answers by response type, `action_changed = y` count, and the final consensus statuses. Count from the files; don't estimate.
 3. Tell the user where the run folder is.
 
 For the study design that compares the three modes, and for how to measure whether understanding improved, see `references/study_design.md`.

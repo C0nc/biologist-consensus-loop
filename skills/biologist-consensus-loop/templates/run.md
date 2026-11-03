@@ -12,11 +12,13 @@
 ## Summary (filled at the end, counted from the files)
 | Measure | Value |
 |---|---|
+| User turns (typed messages only) | |
 | Decisions (D entries) | |
+| Amended decisions | |
 | Superseded decisions | |
 | Agent-initiated questions | |
 | User-initiated questions | |
 | Responses: answered / corrected-premise / unsure / skipped | |
 | Exchanges that changed the next action | |
-| Final consensus: understood / allowed / unsure / unknown / contradicted | |
+| Final consensus: understood / confirmed / allowed / unsure / unknown / contradicted | |
 | Final report | final_report.md |

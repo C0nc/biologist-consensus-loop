@@ -4,7 +4,7 @@ A [Claude Code](https://claude.com/claude-code) skill for running an omics analy
 
 ## What it does
 
-- **Keeps a record of every run** in `<analysis_dir>/consensus/<run_id>/`: the analysis state, the shared-understanding (consensus) state with its full change history, a decision log, a timestamped question log, and a final report (see [What gets recorded](#what-gets-recorded)). In the consensus state every item is marked `understood` / `allowed` / `unsure` / `unknown` / `contradicted`, and clicking "continue" only counts as *allowed*, never *understood*.
+- **Keeps a record of every run** in `<analysis_dir>/consensus/<run_id>/`: the analysis state, the shared-understanding (consensus) state with its full change history, a decision log, a timestamped question log, and a final report (see [What gets recorded](#what-gets-recorded)). In the consensus state every item is marked `understood` / `confirmed` / `allowed` / `unsure` / `unknown` / `contradicted`. Clicking "continue" counts as *allowed*, and supplying a fact as *confirmed*. Only stating what it implies counts as *understood*.
 - **Decides whether to ask.** Five triggers (ambiguous intent, unconfirmed key assumption, a result that defies expectation, a choice that changes the conclusion, possible misunderstanding), plus one test: *could the user's answer change the next action or how the result is interpreted?* If not, Claude adds a short note instead of interrupting.
 - **Uses one format per point:** Finding → Meaning → Suggestion → one Question, with the figure and sample rows shown next to it. The user can answer, correct the premise, or say "I'm not sure".
 - **Shows what changed after each answer**, e.g. "the samples are paired → switching to a paired design; the result now describes change within each animal". It then logs the decision.
@@ -147,16 +147,16 @@ After each run, `<analysis_dir>/consensus/<run_id>/` contains:
 
 | File | What it holds |
 |---|---|
-| `run.md` | Run header: run id, skill version, mode, participant label, data paths, start / resume / end times. At the end, summary counts taken from the other files: decisions, superseded decisions, questions by initiator, responses by type, exchanges that changed the next action, and the final consensus statuses. |
+| `run.md` | Run header: run id, skill version, mode, participant label, data paths, start / resume / end times. At the end, summary counts taken from the other files: user turns, decisions, amended and superseded decisions, questions by initiator, responses by type, exchanges that changed the next action, and the final consensus statuses. |
 | `analysis_state.md` | The current question, step, newest finding and next options, plus an **append-only history** of every change (time, old → new, why). |
 | `consensus_state.md` | The stated intent, confirmed choices, open assumptions and per-concept familiarity, plus an **append-only history** of every status change, so you can see how shared understanding developed, not just where it ended. |
-| `decision_log.md` | One timestamped entry per decision (D1, D2, …): question, confirmed basis, impact, what to reinterpret, what is still open. Reversed decisions are never rewritten; they are linked with `Supersedes` / `Superseded by`. |
+| `decision_log.md` | One timestamped entry per decision (D1, D2, …): question, confirmed basis, impact, what to reinterpret, what is still open. Entries are never rewritten. A correction is added as a timestamped `Amendment` line, and a reversal as a new entry linked with `Supersedes` / `Superseded by`. |
 | `interaction_log.tsv` | One row per question **from either side** (agent and user), ready to load into R/pandas: `q_id`, `initiator`, `asked_at`, `answered_at`, `turn`, `mode`, `trigger`, `decision_class`, `response_type`, `action_changed`, `decision_id`, `consensus_changed`. |
 | `final_report.md` | The report, built from the decision log: for each result, the confirmed facts it rests on, open assumptions, limitations, and what would change the conclusion. |
 
 **Limits of the record:**
 - Claude writes these files itself following the skill. Nothing outside the model checks that every question was logged, so for a formal study, compare a sample of runs against the session transcripts.
-- Timestamps come from the shell at the moment Claude writes them. `answered_at` is when Claude started processing the reply, which is close to, but not exactly, when the user sent it.
+- Timestamps come from the shell at the moment Claude writes them. For Claude's questions, `answered_at` is when Claude started processing the reply, which is close to, but not exactly, when the user sent it. For user questions, the two times bracket Claude's answer. `turn` counts only messages the user typed; background-task notifications are not turns.
 
 ## Layout
 
